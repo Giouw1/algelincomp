@@ -1,0 +1,156 @@
+#include <iostream>
+#include <vector>
+// #include <bits/stdc++.h>
+
+using namespace std;
+
+class Matrix                      
+{
+  public:                      // begin public section
+    Matrix(vector<vector<float> > input);       // constructor
+      void escalona_gauss();
+      void trata_matriz(int i);
+      float get_element(int i, int j){return mat[i][j];};
+      int det_laplace();
+      vector<float> eliminacao_gauss();
+      void fatoracao_lu();
+
+      vector<float> sol_iter_jacobi(float tol = 0.000001);
+    
+ private:                      // begin private section
+    int n;                // member variable
+    vector<vector<float> > mat;
+    int dim;
+    int det;
+};
+
+
+Matrix::Matrix(vector<vector<float> > input)
+{
+   mat = input;
+   n = mat.size()-1; //nós fazemos -1 porque no lado direito da matrix temos o vetor de coeficientes b
+}
+
+void Matrix::trata_matriz(int i){
+
+   for(int j = i + 1; j<n; j++){
+      if(mat[j][i]!=0){ //achamos uma linha com pivo não nulo
+         swap(mat[i], mat[j]);
+         return; 
+      }
+   }
+   //se não achar printar erro porque a matriz é LD e temos infinitas solucoes?
+   cout << "A matiz é LD " << "\n";
+   return;
+}
+
+int Matrix::det_laplace(){
+   return 0;
+}
+
+void Matrix::escalona_gauss(){
+
+   // primeiro checamos se é possível escalonar a matrix
+   // det_laplace();
+   // if (det_laplace()<0){
+   //    cout << "Como o detemrinante é negativo não conseguimos encontrar solução" << "\n";
+   //    return;
+   // }
+   for(int d = 0; d < n; d++){ //quantidade de etapas
+      for(int i = d+1; i < n; i++){ //seleciona a linha 
+         if (mat[d][d]==0){ //achamos uma linha com pivo zero
+            trata_matriz(d); 
+         }
+         float multiplicador = mat[i][d]/mat[d][d];
+         for(int j = 0; j < n; j++){ //desce na coluna
+            mat[i][j] = mat[i][j] - multiplicador * mat[d][j]; 
+            }
+      }
+   }
+   return;
+}
+
+vector<float> Matrix::eliminacao_gauss(){
+
+   escalona_gauss();
+   vector<float> x(n+1,0);
+   // sabemos o último valor de x, o x_n
+   x[n] = mat[n][n+1]/mat[n][n];
+
+   for(int i = n-1; i>=0; i--){
+      float sum = 0;
+      for(int j = i+1; j<= n; j++){
+         sum += mat[i][j]*x[j];
+      }
+      x[i] = (mat[i][n+1] - sum)/mat[i][i];
+   }
+   return x;
+}
+
+vector<float> Matrix::sol_iter_jacobi(float tol){
+   
+   vector<float> x_old(n+1, 1.0); //iniciamos o vetor solucao inicial com todos os elementos como 1
+   float r = 1;
+
+   while(r>tol){
+      vector<float> x_new(n+1,1);
+      for(int i = 0; i<= n; i++){
+         float sum = 0;
+         for(int j = 0; j <= n; j++){
+            if(i!=j){
+               sum+= mat[i][j]*x_old[j];
+            }
+         }
+         x_new[i] = (mat[i][n+1] - sum)/mat[i][i];
+      }
+
+      // calculamos o r para comparara com a tolerância
+      float up_sum_square = 0;
+      float down_sum_square = 0;
+      for(int i = 0; i <= n-1; i++){
+         up_sum_square += (x_old[i]-x_new[i])*(x_old[i]-x_new[i]);
+         down_sum_square += x_new[i]*x_new[i];
+      }
+      r = (sqrt(up_sum_square)/sqrt(down_sum_square));
+      
+      x_old = x_new; // agora usamos o mais novo como sendo o velho para a próxima iteração
+   }
+
+   // ná última iteração do algoritmo o x_old é o mais recente vetor de x, é a solução do sistema
+
+   return x_old;
+}
+
+int main()
+{  
+   // vector<vector<int>> = [[2,4],[1,0]];
+   // vector<vector<float> > fds;
+   // fds = {{3, -1,-1,1}, {-1, 3,-1,2}, {-1,-1,3,1}};  
+   vector<vector<float>> fds({ {3, -1, -1, 1}, 
+                                {-1, 3, -1, 2}, 
+                                {-1, -1, 3, 1} });
+
+   vector<vector<float>> aa({ {1,2,2,3},
+                              {4,4,2,6},
+                              {4,6,4,10}
+   });
+   Matrix m (fds);
+   Matrix mmmm(aa);
+   vector<float> sol;
+   sol =  m.sol_iter_jacobi();
+   for(int i = 0; i<sol.size();i++){
+      cout << sol[i] << " ";
+   }
+   cout<< "\n";
+   cout<< "\n";
+   cout<< "\n";
+
+   vector<float> resolveai;
+   resolveai = mmmm.eliminacao_gauss();
+
+   for(int i = 0; i<resolveai.size();i++){
+      cout << resolveai[i] << " ";
+   }
+   cout<< "\n";
+   return 0;
+}
