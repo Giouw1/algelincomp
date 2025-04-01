@@ -57,13 +57,16 @@ class matrix{
         vector<float> solucaof(n-1,0);//Próxima solução
         vector<float> b = matriz[n];//Lado direito
         while (true){
-            vector<float> vetoraux = multmatrizvetor(1,solucao); //pega o vetor do 
-            for (int j = 0;j<=n-1;j++){
+            vector<float> vetoraux = multmatrizvetor(1,solucao); //pega o vetor pós multiplicação por L+U
+            for (int j = 0;j<=n-1;j++){ //Faz a parte de cima da equação
                 solucaof[j] = (b[j] - vetoraux[j])/d;
             }
+            //Verifica se o resto já bate
             if(modulo(solucaof) - modulo(solucao) <= 0.01){
                 return solucaof;
             }
+            //A nova solução antiga é a antiga solução nova
+            //E a solução nova vai ser redefenida
             solucao = solucaof;
         }
     }
@@ -90,6 +93,5 @@ class matrix{
     }
 
 }
-int main(){
-    return 1;
+void main(){
 }
