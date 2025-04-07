@@ -192,6 +192,8 @@ vector<vector<float>>Matrix::fatoracao_lu(){
 
          float multiplicador = matriz_U[i][d]/matriz_U[d][d];
          matriz_L[i][d] = multiplicador;
+        // Como L é a inversa do produto das matrizes, e sendo as matrizes M diagonais inferiores,
+        // como o produto da inversa é a inversa do produto na ordem inversa, vale ir descobrindo M, e ir "colocando sua inversa" na matriz L
          for(int j = 0; j <= n; j++){ //anda na linha 
             matriz_U[i][j] = matriz_U[i][j] - multiplicador * matriz_U[d][j]; 
             }
