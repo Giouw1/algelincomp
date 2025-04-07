@@ -9,10 +9,12 @@ class Matrix
 {
   public:                     
     Matrix(vector<vector<float> > input);       
-      void escalona_gauss();
-      void trata_matriz(int i);
+      void trata_matriz(int i); // Tenta trocar a linha atual com uma abaixo que tenha pivô diferente de zero. Necessário para evitar divisões por zero durante a eliminação de Gauss
       float get_element(int i, int j){return mat[i][j];};
-      int det_laplace(vector<vector<float>> matriz);
+      vector<vector<float>> get_matriz_A(const vector<vector<float>>& mat_completa); //Obtem a matriz sem o lado direito para aplicar laplace. Retorna apenas a parte A da matriz aumentada [A | b], ignorando o vetor b
+      int det_laplace(const vector<vector<float>>& submat); // Calcula o determinante de uma matriz de forma recursiva usando a expansão de Laplace. Método ineficiente para matrizes grandes, mas serve para fins didáticos
+
+      void escalona_gauss(); // Aplica a eliminação de Gauss para triangularizar a matriz. Checa primeiro se o determinante é negativo como condição simplificada de existência de solução
       vector<float> eliminacao_gauss();
       vector<vector<float>> fatoracao_lu();
 
@@ -46,29 +48,63 @@ void Matrix::trata_matriz(int i){
    return;
 }
 
-int Matrix::det_laplace(vector<vector<float>> matriz){
+vector<vector<float>> Matrix::get_matriz_A(const vector<vector<float>>& mat_completa) {
+    int linhas = mat_completa.size();
+    int colunas = mat_completa[0].size() - 1; // Ignora a última coluna
+    vector<vector<float>> A(linhas, vector<float>(colunas));
 
-   if(matriz.size()==1){
-      return matriz[0][0];
-   }
-   if(matriz.size()==2){
-      return matriz[0][0]*matriz[1][1] - matriz[0][1]*matriz[1][0];
-   }
-   else{
-      vector<float> linha = matriz[0];
-      vector<vector<float>> matriz_aux(n, vector<float>(n,0));
-   }
-   return 0;
+    for (int i = 0; i < linhas; i++) {
+        for (int j = 0; j < colunas; j++) {
+            A[i][j] = mat_completa[i][j];
+        }
+    }
+
+    return A;
 }
+
+int Matrix::det_laplace(const vector<vector<float>>& submat) {
+    int tamanho = submat.size();
+
+    if (tamanho == 1) {
+        return submat[0][0];
+    }
+
+    if (tamanho == 2) {
+        return submat[0][0] * submat[1][1] - submat[0][1] * submat[1][0];
+    }
+
+    float determinante = 0.0;
+
+    for (int k = 0; k < tamanho; ++k) {
+        vector<vector<float>> minor;
+
+        for (int i = 1; i < tamanho; ++i) {
+            vector<float> linha;
+            for (int j = 0; j < tamanho; ++j) {
+                if (j != k) {
+                    linha.push_back(submat[i][j]);
+                }
+            }
+            minor.push_back(linha);
+        }
+
+        float cofator = pow(-1, k) * submat[0][k] * det_laplace(minor);
+        determinante += cofator;
+    }
+
+    return determinante;
+}
+
+
 
 void Matrix::escalona_gauss(){
 
    // primeiro checamos se é possível escalonar a matrix
-   // det_laplace();
-   // if (det_laplace()<0){
-   //    cout << "Como o detemrinante é negativo não conseguimos encontrar solução" << "\n";
-   //    return;
-   // }
+   int determinante = det_laplace(get_matriz_A(mat));
+   if (determinante<0){
+      cout << "Como o detemrinante é negativo não conseguimos encontrar solução" << "\n";
+      return;
+   }
    for(int d = 0; d < n; d++){ //quantidade de diagonais, ele não precisa escalonar embaixo do último pivo porque não tem ninguém para baixo
       for(int i = d+1; i <= n; i++){ //seleciona a linha 
          if (mat[d][d]==0){ //achamos uma linha com pivo zero
@@ -102,7 +138,22 @@ vector<float> Matrix::eliminacao_gauss(){
 
 vector<float> Matrix::sol_iter_jacobi(float tol, int numero_iteracoes , bool usar_numero_iteracoes){
    
-   // adicionar check se pode aplicar porque todos os elementos da diagonal tem que ser maior do que os elementos da linha e da coluna correpsondente 
+   // antes de iniciar o algoritmo devemos checar se cada elemento da diagonal é o maior elemento da sua linha e coluna correspondente
+   for(int i = 0; i<n; i++){
+      float dig_element = fabsf(mat[i][i]);
+      float sum_col = 0;
+      float sum_row = 0;
+      for(int j = 0; j<n; j++){
+         if(j != i){
+            sum_col+= fabsf(mat[j][i]);
+            sum_row+= fabs(mat[i][j]);
+         }
+      }
+      if(!(dig_element>sum_col) || !(dig_element>sum_row)){
+         throw runtime_error("ERRO: O ELEMENTO DÁ DIAGONAL DEVE SER MAIOR DO QUE A SOMA DOS ELEMENTOS DA COLUNA E DA LINHA");
+      }
+   }
+
    vector<float> x_old(n+1, 1.0); //iniciamos o vetor solucao inicial com todos os elementos como 1
    float r = 1;
    int iteracoes = 1;
@@ -179,9 +230,6 @@ vector<vector<float>>Matrix::fatoracao_lu(){
    vector<vector<float>> matriz_L(n+1,vector<float>(n+1));
    vector<vector<float>> matriz_U(n+1,vector<float>(n+1));
    for(int i = 0; i<=n;i++){
-      // for(int j = 0; j <= n; j++){
-      //    matriz_U[i][j] = mat[i][j];
-      // }
       matriz_U[i]=mat[i];
    }
    
@@ -192,7 +240,7 @@ vector<vector<float>>Matrix::fatoracao_lu(){
 
          float multiplicador = matriz_U[i][d]/matriz_U[d][d];
          matriz_L[i][d] = multiplicador;
-        // Como L é a inversa do produto das matrizes, e sendo as matrizes M diagonais inferiores,
+         // Como L é a inversa do produto das matrizes, e sendo as matrizes M diagonais inferiores,
         // como o produto da inversa é a inversa do produto na ordem inversa, vale ir descobrindo M, e ir "colocando sua inversa" na matriz L
          for(int j = 0; j <= n; j++){ //anda na linha 
             matriz_U[i][j] = matriz_U[i][j] - multiplicador * matriz_U[d][j]; 
@@ -205,53 +253,65 @@ vector<vector<float>>Matrix::fatoracao_lu(){
 
 int main()
 {   
-   vector<vector<float>> fds({ {3, -1, -1, 1}, 
-                                {-1, 3, -1, 2}, 
-                                {-1, -1, 3, 1} });
-   cout << fds.size() << "\n";
-   vector<vector<float>> aa({ {1,2,2,3},
-                              {4,4,2,6},
-                              {4,6,4,10}
-   });
-   Matrix m (fds);
-   Matrix mmmm(aa);
-   vector<float> sol;
-   sol =  m.sol_iter_jacobi();
-   for(int i = 0; i<sol.size();i++){
-      cout << sol[i] << " ";
-   }
-   cout<< "\n";
-   cout<< "\n";
-   cout<< "\n";
+   // vector<vector<float>> fds({ {3, 30, -1, 1}, 
+   //                              {-1, 30, -1, 2}, 
+   //                              {-1, 30, 3, 1} });
+   // cout << fds.size() << "\n";
+   // vector<vector<float>> aa({ {1,2,2,3},
+   //                            {4,4,2,6},
+   //                            {4,6,4,10}
 
-   vector<float> resolveai;
-   mmmm.escalona_gauss();
 
-   for(int i = 0; i <=2;i++){
-      for(int j = 0 ; j<=3; j++){
-      cout << mmmm.get_element(i,j) << "  ";
-      }
-   cout << "\n"; 
-   }
+   // });
+   
+   // cout << aa.size()-1;
+   // Matrix m (fds);
+   // Matrix mmmm(aa);
+   // vector<float> sol;
+   // sol =  m.sol_iter_jacobi();
+   // for(int i = 0; i<sol.size();i++){
+   //    cout << sol[i] << " ";
+   // }
+   // cout<< "\n";
+   // cout<< "\n";
+   // cout<< "\n";
 
-   resolveai = mmmm.eliminacao_gauss();
+   // vector<float> resolveai;
+   // mmmm.escalona_gauss();
 
-   for(int i = 0; i<resolveai.size();i++){
-      cout << resolveai[i] << " ";
-   }
-   cout<< "\n";
+   // for(int i = 0; i <=2;i++){
+   //    for(int j = 0 ; j<=3; j++){
+   //    cout << mmmm.get_element(i,j) << "  ";
+   //    }
+   // cout << "\n"; 
+   // }
 
-   cout<< "\n";
+   // resolveai = mmmm.eliminacao_gauss();
 
-   cout<< "\n";
+   // for(int i = 0; i<resolveai.size();i++){
+   //    cout << resolveai[i] << " ";
+   // }
+   // cout<< "\n";
 
-   cout<< "\n";
+   // cout<< "\n";
+
+   // cout<< "\n";
+
+   // cout<< "\n";
  
-   vector<vector<float>> jeson({
-                              {1,2,2,3},
-                              {4,4,2,6},
-                              {4,6,4,10}
+   // vector<vector<float>> jeson({
+   //                            {1,2,2,3},
+   //                            {4,4,2,6},
+   //                            {4,6,4,10}
+   // });
+
+   vector<vector<float>> gigi({
+                              {-1000,2,3},
+                              {1,1,1},
    });
+   Matrix lk(gigi);
+   lk.escalona_gauss();
+
 
    // Matrix jerson(jeson);
    // vector<vector<float>> aaaaaa;
