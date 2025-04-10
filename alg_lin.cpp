@@ -19,7 +19,7 @@ class Matriz
       void escalona_gauss(); // Aplica a eliminação de Gauss para triangularizar a matriz. Checa primeiro se o determinante é negativo como condição simplificada de existência de solução
       vector<float> eliminacao_gauss(); // Resolve o sistema linear Ax = b usando eliminação de Gauss. Supõe que a matriz já está em forma escalonada triangular superior
 
-      vector<vector<float>> fatoracao_lu();
+      vector<float> fatoracao_lu();
 
       vector<float> sol_iter_jacobi(float tol = 0.000001, int numero_iteracoes = 1000);
     
@@ -202,7 +202,7 @@ vector<float> Matriz::sol_iter_jacobi(float tol, int numero_iteracoes){
    return x_old;
 }
 
-vector<vector<float>>Matriz::fatoracao_lu(){
+vector<float>Matriz::fatoracao_lu(){
    //
    // vector<vector<float>> matriz_L(n+1,vector<float>(n+1));
    // vector<vector<float>> matriz_U(n+1,vector<float>(n+1));
@@ -250,7 +250,7 @@ vector<vector<float>>Matriz::fatoracao_lu(){
          matriz_L[i][d] = multiplicador;
          // Como L é a inversa do produto das matrizes, e sendo as matrizes M diagonais inferiores,
         // como o produto da inversa é a inversa do produto na ordem inversa, vale ir descobrindo M, e ir "colocando sua inversa" na matriz L
-         for(int j = 0; j < n; j++){ //anda na linha 
+         for(int j = 0; j <= n; j++){ //anda na linha 
             matriz_U[i][j] = matriz_U[i][j] - multiplicador * matriz_U[d][j]; 
             }
       }
@@ -283,7 +283,8 @@ vector<vector<float>>Matriz::fatoracao_lu(){
       }
       cout << endl;
    }
-   return matriz_U;
+
+   return x;
 
 }
 
@@ -351,17 +352,37 @@ int main()
    vector<vector<float>> matriz3 = gerar_matriz_jacobi_compat(3);
    vector<vector<float>> matriz5 = gerar_matriz_jacobi_compat(5);
    vector<vector<float>> matriz7 = gerar_matriz_jacobi_compat(7);
+   vector<vector<float>> m_exemplo = {{3,-1,-1,1},
+                                       {-1,3,-1,2},
+                                       {-1,-1,3,1}};
 
    Matriz m3(matriz3);
    Matriz m5(matriz5);
    Matriz m7(matriz7);
-   Matriz m({{},{},{}});
+   Matriz mex(m_exemplo);
 
-   
+   vector<float> sol_exemplo_jacob = mex.sol_iter_jacobi();
+   vector<float> sol_exemplo_gauss = mex.eliminacao_gauss();
+   vector<float> sol_lu = mex.fatoracao_lu();
+
+   for(int i = 0;i<sol_exemplo_jacob.size(); i++){
+      cout << sol_exemplo_jacob[i] << " ";
+   }
+   cout << endl;
+   for(int i = 0;i<sol_exemplo_gauss.size(); i++){
+      cout << sol_exemplo_gauss[i] << " ";
+   }
+   cout << endl;
+   for(int i = 0;i<sol_lu.size(); i++){
+      cout << sol_lu[i] << " ";
+   }
+   cout << endl;
+
+
    // m3.sol_iter_jacobi();
    // m5.sol_iter_jacobi();
    // m7.sol_iter_jacobi();
-   m3.fatoracao_lu();
+   
 
    return 0;
 }  
