@@ -90,7 +90,6 @@ vector<double> escalona_gauss(matriz m){
        cout << "Como o detemrinante é negativo não conseguimos encontrar solução" << "\n";
        return {};
     }
-    auto start = high_resolution_clock::now(); // marca o início
     for(int d = 0; d < n; d++){ //quantidade de diagonais, ele não precisa escalonar embaixo do último pivo porque não tem ninguém para baixo
        for(int i = d+1; i <= n; i++){ //seleciona a linha 
           if (m[d][d]==0){ //achamos uma linha com pivo zero
@@ -101,17 +100,6 @@ vector<double> escalona_gauss(matriz m){
              m[i][j] = m[i][j] - multiplicador * m[d][j]; 
              }
        }
-       auto end = high_resolution_clock::now(); // marca o fim
-       auto duration = duration_cast<seconds>(end - start);
-       string filename = "resultados/resultados_escalona_gauss" + to_string(m.size()) + ".txt";
-
-       ofstream tempoescalona(filename);
-       if(tempoescalona.is_open()){
-         cout<< "arquivo criado com sucesso";
-         cout <<"\n";
-      }
-      else{cerr << "Erro criando o arquivo " << endl;}
-      tempoescalona<< "Tempo:"<< duration.count() <<"s"<< " "<< m.size()<<endl;
     }
     return eliminacao_baixo_cima(m);
 }
